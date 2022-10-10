@@ -224,6 +224,7 @@ def run_module():
     module.exit_json(**result)
 
 def deploy_present(params):
+    (has_changed,has_failed,json_data) =(False,True,dict())
     (return_code,json_data) = get_deplyment_status(params)
 
     if return_code == 0 and json_data['result']['status'] == 'OK' and json_data['result']['enabled']:
