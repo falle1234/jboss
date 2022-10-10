@@ -234,7 +234,7 @@ def deploy_present(params):
         has_changed = False
 
     if return_code > 0 and json_data['failure-description'].index('not found'):
-        (return_code, json_data, output2) = run_jboss_cli(params,'deploy ' + params['tmp_dir'] + params['deployment'] +' --name '+ params['deployment'] + ' --force')
+        (return_code, json_data, output2) = run_jboss_cli(params,'deploy ' + params['tmp_dir'] + params['deployment'] +' --name='+ params['deployment'] + ' --force')
         output += output2
         if return_code == 0:
             has_changed = True
