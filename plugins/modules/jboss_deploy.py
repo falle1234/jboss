@@ -129,8 +129,12 @@ def run_jboss_cli(data,command):
     except Exception as exception:
         output = exception.output
         output = output.decode()
-        output = output[output.index('\n{\n'):]
-        result_parsed = json.loads(output)
+        idx = output.find('\n{\n')
+        if idx >= 0:
+            output = output[:]
+            result_parsed = json.loads(output)
+        else:
+            result_parsed = dict()
         output = exception
         return (exception.returncode,result_parsed)
     return (0,result_parsed)
