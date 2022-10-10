@@ -140,7 +140,7 @@ def run_jboss_cli(data,command):
             result_parsed = dict()
         output = exception
         return (exception.returncode,result_parsed, subprocess.STDOUT)
-    return (0,result_parsed, subprocess.STDOUT)
+    return (0,result_parsed, 'output ' +subprocess.STDOUT)
 
 
 def run_module():
