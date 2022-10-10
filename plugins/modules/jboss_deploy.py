@@ -139,8 +139,8 @@ def run_jboss_cli(data,command):
         else:
             result_parsed = dict()
         output = exception
-        return (exception.returncode,result_parsed, exception.output)
-    return (0,result_parsed, output)
+        return (exception.returncode,result_parsed)
+    return (0,result_parsed)
 
 
 def run_module():
@@ -190,9 +190,9 @@ def run_module():
         "replace": deploy_replace
     }
 
-    has_changed, has_failed, log_data, output = state_map.get(
+    has_changed, has_failed, log_data = state_map.get(
         module.params['state'])(params=module.params)
-    module.exit_json(changed=has_changed, failed=has_failed,log_data=log_data,std_output=output)
+    module.exit_json(changed=has_changed, failed=has_failed,log_data=log_data)
 
     (return_code,json_data) = run_jboss_cli(module.params, '/deployment=' + module.params['deployment'] + ':read-resource(include-runtime=true)')
     result['log_data'] = json_data
@@ -228,20 +228,20 @@ def run_module():
 
 def deploy_present(params):
     (has_changed,has_failed,json_data) =(False,False,dict())
-    (return_code,json_data,output) = get_deplyment_status(params)
+    (return_code,json_data) = get_deplyment_status(params)
 
     if return_code == 0 and json_data['result']['status'] == 'OK' and json_data['result']['enabled']:
         has_changed = False
 
     if return_code > 0 and json_data['failure-description'].index('not found'):
-        (return_code, json_data, output2) = run_jboss_cli(params,'deploy ' + params['tmp_dir'] + params['deployment'] +' --name='+ params['deployment'] + ' --force')
-        output += output2
+        (return_code, json_data) = run_jboss_cli(params,'deploy ' + params['tmp_dir'] + params['deployment'] +' --name='+ params['deployment'] + ' --force')
+        
         if return_code == 0:
             has_changed = True
         else:
             has_failed = True
 
-    return (has_changed, has_failed, json_data, output)
+    return (has_changed, has_failed, json_data)
 
 def deploy_absent(params):
     (return_code,json_data) = get_deplyment_status(params)
