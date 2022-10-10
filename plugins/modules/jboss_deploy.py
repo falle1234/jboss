@@ -131,7 +131,7 @@ def run_jboss_cli(data,command):
         output = output.decode()
         idx = output.find('\n{\n')
         if idx >= 0:
-            output = output[:]
+            output = output[idx:]
             result_parsed = json.loads(output)
         else:
             result_parsed = dict()
