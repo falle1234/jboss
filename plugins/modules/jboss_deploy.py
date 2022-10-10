@@ -187,9 +187,9 @@ def run_module():
         "replace": deploy_replace
     }
 
-    has_changed, has_failed, result = state_map.get(
+    has_changed, has_failed, log_data = state_map.get(
         module.params['state'])(params=module.params)
-
+    module.exit_json(has_changed=has_changed,has_failed=has_failed,log_data=log_data)
 
     (return_code,json_data) = run_jboss_cli(module.params, '/deployment=' + module.params['deployment'] + ':read-resource(include-runtime=true)')
     result['log_data'] = json_data
