@@ -139,7 +139,7 @@ def run_jboss_cli(data,command):
         else:
             result_parsed = dict()
         output = exception
-        return (exception.returncode,result_parsed, output)
+        return (exception.returncode,result_parsed, exception.output)
     return (0,result_parsed, output)
 
 
