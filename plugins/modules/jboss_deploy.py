@@ -99,7 +99,15 @@ import json
 import os
 from ansible.module_utils.basic import AnsibleModule
 
-
+def extract_json_from_output(output):
+    output = output.decode()
+    idx = output.find('\n{\n')
+    if idx >= 0:
+        output = output[idx:]
+        result_parsed = json.loads(output)
+    else:
+        result_parsed = dict()
+    return result_parsed
 
 def run_jboss_cli(data,command):
     """ execute the rules provided using jcliff """
@@ -122,23 +130,9 @@ def run_jboss_cli(data,command):
                                          stderr=subprocess.STDOUT,
                                          shell=False,
                                          env=os.environ)
-        output = output.decode()
-        idx = output.find('\n{\n')
-        if idx >= 0:
-            output = output[idx:]
-            result_parsed = json.loads(output)
-        else:
-            result_parsed = dict()
+        result_parsed = extract_json_from_output(output)
     except Exception as exception:
-        output = exception.output
-        output = output.decode()
-        idx = output.find('\n{\n')
-        if idx >= 0:
-            output = output[idx:]
-            result_parsed = json.loads(output)
-        else:
-            result_parsed = dict()
-        output = exception
+        result_parsed = extract_json_from_output(exception.output)
         return (exception.returncode,result_parsed)
     return (0,result_parsed)
 
@@ -182,8 +176,6 @@ def run_module():
     if module.check_mode:
         module.exit_json(**result)
 
-
-
     state_map = {
         "present": deploy_present,
         "absent": deploy_absent,
@@ -193,38 +185,6 @@ def run_module():
     has_changed, has_failed, log_data = state_map.get(
         module.params['state'])(params=module.params)
     module.exit_json(changed=has_changed, failed=has_failed,log_data=log_data)
-
-    (return_code,json_data) = run_jboss_cli(module.params, '/deployment=' + module.params['deployment'] + ':read-resource(include-runtime=true)')
-    result['log_data'] = json_data
-    #raise Exception(json_data['result']['status'])
-   
-    
-    if return_code > 0 and module.params['state'] == 'absent' and json_data['failure-description'].index('not found'):
-        result['changed'] = False
-        module.exit_json(**result)
-    
-    if return_code == 0 and module.params['state'] == 'absent' and json_data['outcome'] == 'success':
-        result['changed'] = True
-        module.exit_json(**result)
-
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
-    result['original_message'] = module.params['deployment']
-
-    # use whatever logic you need to determine whether or not this module
-    # made any modifications to your target
-    #if module.params['new']:
-    #    result['changed'] = True
-
-    # during the execution of the module, if there is an exception or a
-    # conditional state that effectively causes a failure, run
-    # AnsibleModule.fail_json() to pass in the message and the result
-    #if module.params['name'] == 'fail me':
-    #    module.fail_json(msg='You requested this to fail', **result)
-
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
-    module.exit_json(**result)
 
 def deploy_present(params):
     (has_changed,has_failed,json_data) =(False,False,dict())
@@ -244,12 +204,26 @@ def deploy_present(params):
     return (has_changed, has_failed, json_data)
 
 def deploy_absent(params):
+    (has_changed,has_failed,json_data) =(False,False,dict())
     (return_code,json_data) = get_deplyment_status(params)
-    return ('has_changed', 'has_failed', 'meta')
+
+    if return_code == 0 and json_data['result']['status'] == 'OK' and json_data['result']['enabled']:
+        (return_code, json_data) = run_jboss_cli(params,'undeploy '+ params['deployment'])
+        if return_code == 0:
+            has_changed = True
+        else:
+            has_failed = True
+
+    return (has_changed, has_failed, json_data)
 
 def deploy_replace(params):
-    (return_code,json_data) = get_deplyment_status(params)
-    return ('has_changed', 'has_failed', 'meta')
+    (has_changed,has_failed,json_data) =(False,False,dict())
+    (return_code, json_data) = run_jboss_cli(params,'deploy ' + params['tmp_dir'] + params['deployment'] +' --name='+ params['deployment'] + ' --force')
+    if return_code == 0:
+        has_changed = True
+    else:
+        has_failed = True
+    return (has_changed, has_failed, json_data)
 
 def main():
     run_module()
