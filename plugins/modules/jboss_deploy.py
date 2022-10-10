@@ -139,8 +139,8 @@ def run_jboss_cli(data,command):
         else:
             result_parsed = dict()
         output = exception
-        return (exception.returncode,result_parsed, subprocess.STDOUT)
-    return (0,result_parsed, 'output ' +subprocess.STDOUT)
+        return (exception.returncode,result_parsed, output)
+    return (0,result_parsed, output)
 
 
 def run_module():
