@@ -123,9 +123,12 @@ def run_jboss_cli(data,command):
                                          shell=False,
                                          env=os.environ)
         output = output.decode()
-        output = output[output.index('\n{\n'):]
-        result_parsed = json.loads(output)
-
+        idx = output.find('\n{\n')
+        if idx >= 0:
+            output = output[idx:]
+            result_parsed = json.loads(output)
+        else:
+            result_parsed = dict()
     except Exception as exception:
         output = exception.output
         output = output.decode()
@@ -136,8 +139,8 @@ def run_jboss_cli(data,command):
         else:
             result_parsed = dict()
         output = exception
-        return (exception.returncode,result_parsed)
-    return (0,result_parsed)
+        return (exception.returncode,result_parsed, subprocess.STDOUT)
+    return (0,result_parsed, subprocess.STDOUT)
 
 
 def run_module():
@@ -187,9 +190,9 @@ def run_module():
         "replace": deploy_replace
     }
 
-    has_changed, has_failed, log_data = state_map.get(
+    has_changed, has_failed, log_data, output = state_map.get(
         module.params['state'])(params=module.params)
-    module.exit_json(has_changed=has_changed,has_failed=has_failed,log_data=log_data)
+    module.exit_json(changed=has_changed, failed=has_failed,log_data=log_data,std_output=output)
 
     (return_code,json_data) = run_jboss_cli(module.params, '/deployment=' + module.params['deployment'] + ':read-resource(include-runtime=true)')
     result['log_data'] = json_data
@@ -225,7 +228,7 @@ def run_module():
 
 def deploy_present(params):
     (has_changed,has_failed,json_data) =(False,True,dict())
-    (return_code,json_data) = get_deplyment_status(params)
+    (return_code,json_data,output) = get_deplyment_status(params)
 
     if return_code == 0 and json_data['result']['status'] == 'OK' and json_data['result']['enabled']:
         has_changed = False
