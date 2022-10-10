@@ -235,12 +235,13 @@ def deploy_present(params):
 
     if return_code > 0 and json_data['failure-description'].index('not found'):
         (return_code, json_data, output2) = run_jboss_cli(params,'deploy ' + params['tmp_dir'] + params['deployment'] +' --name '+ params['deployment'] + ' --force')
+        output += output2
         if return_code == 0:
             has_changed = True
         else:
             has_failed = True
 
-    return (has_changed, has_failed, json_data, output + ' ' + output2)
+    return (has_changed, has_failed, json_data, output)
 
 def deploy_absent(params):
     (return_code,json_data) = get_deplyment_status(params)
